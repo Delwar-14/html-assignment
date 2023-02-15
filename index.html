@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Build a CRUD Rest API in JavaScript, using: Node.js Express Sequelize Postgres Docker Docker... Tagged with beginners, javascript, webdev, docker.">
+    <title>Document</title>
+</head>
+
+<body>
+    <article>
+        <header>
+            <div>
+                <img width='100%' height="400" src="imagend.png" alt="">
+            </div>
+            <div>
+                <p> <img src="https://res.cloudinary.com/practicaldev/image/fetch/s---UywewBg--/c_fill,f_auto,fl_progressive,h_50,q_auto,w_50/https://dev-to-uploads.s3.amazonaws.com/uploads/user/profile_image/344808/8986fcb1-61a0-4888-a85e-13c115030558.jpeg"
+                        alt=""> Francesco Ciulla <br> Posted on Feb </p>
+                <h1>
+                    Build a CRUD Rest API in JavaScript using Nodejs, Express, Postgres, Docker
+                </h1>
+            </div>
+            <div>
+                <pre><a href="/">#beginner</a>  <a href="/">#javascript</a>  <a href="/">#webdev</a>  <a href="/">#docker</a></pre>
+            </div>
+        </header>
+        <p>Let's create a CRUD rest API in JavaScript, using : </p>
+        <ul>
+            <li>Node.js</li>
+            <li>Express</li>
+            <li>Sequelize</li>
+            <li>Postgres</li>
+            <li>Docker</li>
+            <li>Docker Compose</li>
+        </ul>
+        <p>If you prefer a video version:</p>
+        <p> <a href="https://youtube.com/live/Uv-jMWV29rU"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--Z3q-fIDy--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/8bnk5iu9rr7x5eo6uhz6.png"
+                    alt="youtube logo link" width="100%" height="400"></a><br>
+
+        </p>
+        <hr>
+        <h1>Intro</h1>
+        <p>Here is a schema of the architecture of the application we are going to create:</p>
+        <p><a href="https://res.cloudinary.com/practicaldev/image/fetch/s--a6Pme3yz--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/185um7lloh3h4nb99w5p.png"
+                class="article-body-image-wrapper"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--a6Pme3yz--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/185um7lloh3h4nb99w5p.png"
+                    alt="crud, read, update, delete, to a node.js app and postgres service, connected with docker compose. POstman and tableplus to test it"
+                    loading="lazy" width="100%" height="400"></a>
+        </p>
+        <p>We will create 5 endpoints for basic CRUD operations:</p>
+        <ul>
+            <li>Create</li>
+            <li>Read all</li>
+            <li>Read one</li>
+            <li>Update</li>
+            <li>Delete</li>
+        </ul>
+        <p>We will create a Node.js application using:</p>
+        <ul>
+            <li>Express as a framework</li>
+            <li>Sequelize as an ORM</li>
+        </ul>
+        <ol>
+            <li>
+                <p>We will Dockerize the Node.js application</p>
+            </li>
+            <li>
+                <p>We will have a Postgres istance, we will test it with Tableplus</p>
+            </li>
+            <li>
+                <p>We will create a docker compose file to run both the services</p>
+            </li>
+            <li>
+                <p>We will test the APIs with Postman</p>
+            </li>
+        </ol>
+        <hr>
+        <h1>
+            Step-by-step guide
+        </h1>
+        <p>Here is a step-by step guide.</p>
+        <p>create a new folder<br></p>
+        <pre><code>mkdir node-crud-api</code></pre>
+        <p>step into it<br></p>
+        <pre><code>cd node-crud-api</code></pre>
+        <p>install the dependencies<br></p>
+        <pre><code>npm i express pg sequelize</code></pre>
+        <ul>
+            <li>express is the Node.js framework</li>
+            <li>pg is a driver for a connection with a Postgres db</li>
+            <li>sequelize is the ORM so we avoid typing SQL queries</li>
+        </ul>
+
+        <p>create 4 folders<br></p>
+        <pre><code>mkdir controllers routes util models</code></pre>
+        <p>Open the folder with your favorite IDE. If you have Visual Studio Code, you can type this from the
+            terminal:<br></p>
+        <pre><code>code .</code></pre>
+        <p>You should now have a folder similar to this one:<br></p>
+        <p><a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--OkjMAu50--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/kx8h0hlg7gbnjobrc276.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--OkjMAu50--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/kx8h0hlg7gbnjobrc276.png"
+                    alt="" loading="lazy" width="100%" height="400"></a></p>
+        <p>Now let's start coding.</p>
+
+        <h2>
+            Database connection
+        </h2>
+        <p>Create a file called "database.js" inside the "util" folder.</p>
+        <p>This file will contain the internal configuration to allow the connection between the Node.js application and
+            the running Postgres instance.</p>
+        <p>Populate the util/database.js file<br></p>
+        <pre><code>
+            const Sequelize = require('sequelize');
+
+            const sequelize = new Sequelize(
+                process.env.PG_DB,
+                process.env.PG_USER,
+                process.env.PG_PASSWORD,
+                {
+                    host: process.env.PG_HOST,
+                    dialect: 'postgres',
+                }
+            );
+            
+            module.exports = sequelize;
+        </code></pre>
+
+        <h2>
+            User model
+        </h2>
+        <p>Create a file called "user.js" inside the "models" folder.</p>
+        <p>This file will contain the model, in this case a user with an auto-incremented id, a name and an email.</p>
+        <p>Populate the models/user.js file:<br></p>
+        <pre><code>
+            const Sequelize = require('sequelize');
+            const db = require('../util/database');
+            
+            const User = db.define('user', {
+                id: {
+                    type: Sequelize.INTEGER,
+                    autoIncrement: true,
+                    allowNull: false,
+                    primaryKey: true
+                },
+                name: Sequelize.STRING,
+                email: Sequelize.STRING
+            });
+            
+            module.exports = User;
+        </code></pre>
+
+        <h2>
+            Controllers
+        </h2>
+        <p>This is the file that contains all the functions to execute in order to interact with the database and have
+            the 4 basic functionalities:</p>
+        <p>Create a file called "users.js" inside the "controllers" folder</p>
+        <p>Populate the controllers/users.js file<br> </p>
+
+        <pre><code>
+            const User = require('../models/user');
+
+            // CRUD Controllers
+            
+            //get all users
+            exports.getUsers = (req, res, next) => {
+                User.findAll()
+                    .then(users => {
+                        res.status(200).json({ users: users });
+                    })
+                    .catch(err => console.log(err));
+            }
+            
+            //get user by id
+            exports.getUser = (req, res, next) => {
+                const userId = req.params.userId;
+                User.findByPk(userId)
+                    .then(user => {
+                        if (!user) {
+                            return res.status(404).json({ message: 'User not found!' });
+                        }
+                        res.status(200).json({ user: user });
+                    })
+                    .catch(err => console.log(err));
+            }
+            
+            //create user
+            exports.createUser = (req, res, next) => {
+              const name = req.body.name;
+              const email = req.body.email;
+              User.create({
+                name: name,
+                email: email
+              })
+                .then(result => {
+                  console.log('Created User');
+                  res.status(201).json({
+                    message: 'User created successfully!',
+                    user: result
+                  });
+                })
+                .catch(err => {
+                  console.log(err);
+                }); 
+            }
+            
+            //update user
+            exports.updateUser = (req, res, next) => {
+              const userId = req.params.userId;
+              const updatedName = req.body.name;
+              const updatedEmail = req.body.email;
+              User.findByPk(userId)
+                .then(user => {
+                  if (!user) {
+                    return res.status(404).json({ message: 'User not found!' });
+                  }
+                  user.name = updatedName;
+                  user.email = updatedEmail;
+                  return user.save();
+                })
+                .then(result => {
+                  res.status(200).json({message: 'User updated!', user: result});
+                })
+                .catch(err => console.log(err));
+            }
+            
+            //delete user
+            exports.deleteUser = (req, res, next) => {
+              const userId = req.params.userId;
+              User.findByPk(userId)
+                .then(user => {
+                  if (!user) {
+                    return res.status(404).json({ message: 'User not found!' });
+                  }
+                  return User.destroy({
+                    where: {
+                      id: userId
+                    }
+                  });
+                })
+                .then(result => {
+                  res.status(200).json({ message: 'User deleted!' });
+                })
+                .catch(err => console.log(err));
+            }
+        </code></pre>
+        <h2>
+            Routes
+        </h2>
+        <p>Create a file called "users.js" inside the "routes" folder.</p>
+        <p>Populate the routes/users.js file<br></p>
+        <pre><code>
+            const controller = require('../controllers/users');
+            const router = require('express').Router();
+            
+            // CRUD Routes /users
+            router.get('/', controller.getUsers); // /users
+            router.get('/:userId', controller.getUser); // /users/:userId
+            router.post('/', controller.createUser); // /users
+            router.put('/:userId', controller.updateUser); // /users/:userId
+            router.delete('/:userId', controller.deleteUser); // /users/:userId
+            
+            module.exports = router;
+        </code></pre>
+        <hr>
+        <h2>
+            Index file
+        </h2>
+        <p>To run our application we need to create on more file at the root level. this is the file that will be
+            executed by the docker container.</p>
+        <p>in the root folder, create a file called index.js</p>
+        <p>Populate the "index.js file":<br>
+        </p>
+        <pre><code>
+            const express = require('express');
+            const bodyparser = require('body-parser');
+            const sequelize = require('./util/database');
+            const User = require('./models/user');
+            
+            const app = express();
+            
+            app.use(bodyparser.json());
+            app.use(bodyparser.urlencoded({ extended: false }));
+            
+            app.use((req, res, next) => {
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+              next();
+            });
+            
+            //test route
+            app.get('/', (req, res, next) => {
+              res.send('Hello World');
+            });
+            
+            //CRUD routes
+            app.use('/users', require('./routes/users'));
+            
+            //error handling
+            app.use((error, req, res, next) => {
+              console.log(error);
+              const status = error.statusCode || 500;
+              const message = error.message;
+              res.status(status).json({ message: message });
+            });
+            
+            //sync database
+            sequelize
+              .sync()
+              .then(result => {
+                console.log("Database connected");
+                app.listen(3000);
+              })
+              .catch(err => console.log(err));
+        </code></pre>
+        <hr>
+        <h1>
+            Docker Part
+        </h1>
+        <p>Let's create 3 more files at the root level:</p>
+        <ul>
+            <li>.dockerignore (it starts with a dot)</li>
+            <li>Dockerfile (capital D)</li>
+            <li>docker-compose.yml</li>
+        </ul>
+        <p>The structure should look like this:</p>
+        <p><a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--ym9v97gW--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/dggtixcespkaf85xzsl7.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--ym9v97gW--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/dggtixcespkaf85xzsl7.png"
+                    alt="" loading="lazy" width="100%" height="400"></a></p>
+        <p>the .dockerignore will contain a single line:<br></p>
+        <pre><code>node_modules</code></pre>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--iIM67jXE--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/mh72v3t2h21o8uinmisw.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--iIM67jXE--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/mh72v3t2h21o8uinmisw.png"
+                    alt="" loading="lazy" width="100%" height="400"></a>
+        </p>
+        <hr>
+        <h2>
+            The Dockerfile
+        </h2>
+        <p>
+            To create a Docker image we need a simple yet powerfule file. That's called "Dockerfile" (capital D). We
+            might use a different name but let's keep things simple for now.<br>
+        </p>
+        <pre>
+            <code>
+                FROM node:14
+
+                # Create app directory
+                WORKDIR /app
+                
+                COPY package*.json ./
+                
+                RUN npm install
+                
+                # Bundle app source
+                COPY . .
+                
+                EXPOSE 3000
+                
+                CMD [ "node", "index.js" ]
+            </code>
+        </pre>
+        <hr>
+        <h2>
+            Docker compose file
+        </h2>
+        <p>
+            To run multiple services an easy way is to create a file called "docker-compose.yml"
+        </p>
+        <p>The docker-compose.yml file:<br></p>
+        <pre>
+            <code>
+                version: "3.9"
+
+                services:
+                  node_app:
+                    container_name: node_app
+                    build: .
+                    image: francescoxx/node_live_app
+                    ports:
+                      - "3000:3000"
+                    environment:
+                      - PG_DB=node_live_db
+                      - PG_USER=francesco
+                      - PG_PASSWORD=12345
+                      - PG_HOST=node_db
+                    depends_on:
+                      - node_db
+                
+                  node_db:
+                    container_name: node_db
+                    image: postgres:12
+                    ports:
+                      - "5432:5432"
+                    environment:
+                      - POSTGRES_DB=node_live_db
+                      - POSTGRES_USER=francesco
+                      - POSTGRES_PASSWORD=12345
+                    volumes:
+                      - node_db_data:/var/lib/postgresql/data
+                
+                volumes:
+                  node_db_data: {}
+            </code>
+        </pre>
+        <hr>
+        <h1>Build the Docker image and run the docker containers</h1>
+        <h3>Run Postgres in a container</h3>
+        <p>First, let's run the postgres container:</p>
+        <pre>
+            <code>
+                docker compose up -d node_db
+            </code>
+        </pre>
+        <p>To check the logs, we can type:</p>
+        <pre>
+            <code>
+                docker compose logs
+            </code>
+        </pre>
+        <p>you should get an output similar to this one:</p>
+        <p><a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--n5tX5Gwp--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/icy9s09od5sdja90drft.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--n5tX5Gwp--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/icy9s09od5sdja90drft.png"
+                    alt="..... 2023-02-12 13:07:41.342 UTC [1] LOG:  database system is ready to accept connections"
+                    loading="lazy" width="100%" height="300"></a></p>
+        <p>
+            if we see "database system is ready to accept connections" we are good to go!
+        </p>
+        <p>
+            Let's test it using TablePlus.
+        </p>
+        <p>
+            Click on the + to create a new connection <br>
+        </p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--rc_RjaTS--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/uhg0bfzo6wdsmrsy8yxo.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--rc_RjaTS--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/uhg0bfzo6wdsmrsy8yxo.png"
+                    alt="Image description" loading="lazy" width="100%" height="470">
+            </a>
+        </p>
+        <p>
+            copy the values from the docker-compose.yml file. (password is 12345 if you left the values as they are)
+            <br>
+        </p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--kGLpKS8M--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/4itnaoht5klvzsv17sua.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--kGLpKS8M--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/4itnaoht5klvzsv17sua.png"
+                    alt="Image description" loading="lazy" width="100%" height="726">
+            </a>
+        </p>
+        <h3>
+            Build and run the Docker service
+        </h3>
+        <p>
+            Second, let's build our Docker image:
+        </p>
+        <pre>
+            <code>
+                docker compose build
+            </code>
+        </pre>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--Gla-FFno--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/dk6fb1pal8f4uky90azw.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--Gla-FFno--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/dk6fb1pal8f4uky90azw.png"
+                    alt="Image description" loading="lazy" width="100%" height="386">
+            </a>
+        </p>
+        <p>
+            finally, let's start the service: <br>
+        </p>
+        <pre>
+            <code>
+                docker compose up node_app
+            </code>
+        </pre>
+        <p>
+            This should be the output on the terminal
+        </p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--0ybTvk1E--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/vjvfio6uws4ec68uhq5x.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--0ybTvk1E--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/vjvfio6uws4ec68uhq5x.png"
+                    alt="Image description" loading="lazy" width="100%" height="190">
+            </a>
+        </p>
+        <h3>
+            Test the app with Postman
+        </h3>
+        <p>
+            Let's test the app using Postman.
+        </p>
+        <p>
+            Make a GET request to localhost:3000
+        </p>
+
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--xxp17yJf--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/aey33b5xr0y9snvqueo5.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--xxp17yJf--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/aey33b5xr0y9snvqueo5.png"
+                    alt="Image description" loading="lazy" width="880" height="470">
+            </a>
+        </p>
+        <p>
+            Make a GET request to localhost:3000/users
+        </p>
+        <p>
+            We should have an empty array as a response
+        </p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s---IXsSrOj--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/5b16b4nfdai8vfyx3dq8.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s---IXsSrOj--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/5b16b4nfdai8vfyx3dq8.png"
+                    alt="Image description" loading="lazy" width="100%" height="452">
+            </a>
+        </p>
+        <p>
+            Let's create 3 users: aaa, bbb, and ccc <br>
+        </p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--1zmnGYcT--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/f65lhud0t165u5ldax90.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--1zmnGYcT--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/f65lhud0t165u5ldax90.png"
+                    alt="Image description" loading="lazy" width="880" height="573">
+            </a>
+        </p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--9KK6mPf8--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/gqqjbcmqzmf1hj4gcok1.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--9KK6mPf8--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/gqqjbcmqzmf1hj4gcok1.png"
+                    alt="Image description" loading="lazy" width="880" height="572">
+            </a>
+        </p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--AXhY0Ti0--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/bwfgtvg9dj36oo1j3yn5.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--AXhY0Ti0--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/bwfgtvg9dj36oo1j3yn5.png"
+                    alt="Image description" loading="lazy" width="880" height="561">
+            </a>
+        </p>
+        <p>Let's check again all the users:</p>
+        <p>Make a GET request to localhost:3000/users</p>
+        <p>We should see 3 users:</p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--QyvO3OaO--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/6izo1s8yisswgo8r7mph.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--QyvO3OaO--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/6izo1s8yisswgo8r7mph.png"
+                    alt="Image description" loading="lazy" width="880" height="635">
+            </a>
+        </p>
+        <p>Let's get a single user, for example the user 2</p>
+        <p>Make a GET request to localhost:3000/users/2</p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--lUR8k_0m--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/1as9y9ucmw803f9xsato.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--lUR8k_0m--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/1as9y9ucmw803f9xsato.png"
+                    alt="Image description" loading="lazy" width="880" height="442">
+            </a>
+        </p>
+        <p>Let's update an existing user, for example the same user 2</p>
+        <p>Make a PUT reqeust to localhost:3000/users/2 with a different body</p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--Knj9Ry2Z--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/tvcfrgcpyeo5fai54qf4.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--Knj9Ry2Z--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/tvcfrgcpyeo5fai54qf4.png"
+                    alt="Image description" loading="lazy" width="880" height="435">
+            </a>
+        </p>
+
+        <p>Finally, let's delete the user number 3</p>
+        <p>Make a DELETE reuqest to localhost:3000/users/3</p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--FVg1qGpE--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/5do5l6uza4mubbeix9zs.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--FVg1qGpE--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/5do5l6uza4mubbeix9zs.png"
+                    alt="Image description" loading="lazy" width="880" height="362">
+            </a>
+        </p>
+        <p>We can also check the values using TablePlus</p>
+        <p>
+            <a
+                href="https://res.cloudinary.com/practicaldev/image/fetch/s--vXY-Ns_V--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/xbtdkl3wj4wd388fks4m.png"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--vXY-Ns_V--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/xbtdkl3wj4wd388fks4m.png"
+                    alt="Image description" loading="lazy" width="880" height="527">
+            </a>
+        </p>
+
+        <h1>Conclusion</h1>
+        <p>
+            This is a basic example of how you can build a CRUD rest API using Node.js, Express, Sequelize, Postres,
+            Docker, and Docker Compose.
+        </p>
+        <p>All the code is available in the GitHub repository:
+            <a href="https://github.com/FrancescoXX/crud-node-live">https://github.com/FrancescoXX/crud-node-live
+            </a>
+        </p>
+        <p>For a video version:<br>
+            If you prefer a video version:<br>
+            <a href="https://youtube.com/live/Uv-jMWV29rU"><img
+                    src="https://res.cloudinary.com/practicaldev/image/fetch/s--Z3q-fIDy--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/8bnk5iu9rr7x5eo6uhz6.png"
+                    alt="youtube logo link" loading="lazy" width="880" height="495">
+            </a>
+        </p>
+        <p>That's all. <br>
+            If you have any question, drop a comment below.
+        </p>
+        <p>
+            <a href="https://francescociulla.com">Francesco</a>
+        </p>
+    </article>
+
+</body>
+
+</html>
